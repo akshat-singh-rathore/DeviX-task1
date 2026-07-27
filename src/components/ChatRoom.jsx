@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../AuthContext";
 import { ROOMS } from "../routes";
-import { db, ref, push, set, onValue, off } from "../firebase";
+import { db, ref, push, set, onValue, off, get24HourTimestampCutoff } from "../firebase";
+
 import {
   Send,
   Smile,
@@ -84,7 +85,8 @@ export default function ChatRoom({ roomId }) {
         const stored = localStorage.getItem(localStoreKey);
         if (stored) {
           const parsed = JSON.parse(stored);
-          const cutoff = Date.now() - TWENTY_FOUR_HOURS_MS;
+          const cutoff = get24HourTimestampCutoff();
+
           return parsed.filter((m) => m.timestamp >= cutoff);
         }
       } catch (e) {

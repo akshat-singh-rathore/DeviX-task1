@@ -30,4 +30,9 @@ export {
   orderByChild,
   startAt,
   off,
-};
+}
+
+export function get24HourTimestampCutoff() {
+  return Date.now() - 24 * 60 * 60 * 1000;
+}
+
