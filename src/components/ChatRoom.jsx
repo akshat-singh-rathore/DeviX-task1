@@ -219,6 +219,14 @@ export default function ChatRoom({ roomId }) {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+
   const addEmoji = (emoji) => {
     setInputText((prev) => prev + emoji);
     if (inputRef.current) inputRef.current.focus();
@@ -386,10 +394,12 @@ export default function ChatRoom({ roomId }) {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder={`Send anonymous message to #${currentRoom.name}...`}
               maxLength={MAX_CHAR_LIMIT}
               className="flex-1 bg-transparent px-3 py-2 text-sm text-slate-100 placeholder-slate-400 focus:outline-none"
             />
+
 
             {/* Character Counter */}
             <div className="text-[11px] text-slate-400 font-mono px-2 shrink-0">
