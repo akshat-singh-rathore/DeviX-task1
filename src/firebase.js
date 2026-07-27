@@ -12,6 +12,7 @@ import {
   orderByChild,
   startAt,
   off,
+  serverTimestamp
 } from "firebase/database";
 
 const firebaseConfig = {
@@ -44,6 +45,7 @@ export {
   orderByChild,
   startAt,
   off,
+  serverTimestamp,
 };
 
 export function get24HourTimestampCutoff() {
