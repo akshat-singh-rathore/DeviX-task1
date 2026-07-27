@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Outlet } from "react-router";
 import { AuthProvider } from "./AuthContext";
 import Sidebar from "./components/Sidebar";
@@ -24,11 +24,8 @@ export default function App() {
               >
                 Menu
               </button>
-              <span className="font-bold text-zinc-100 text-sm">AnonChat</span>
+              <span className="font-bold text-zinc-100 text-sm">Anonymous Multi-User Chat System</span>
             </div>
-            <span className="text-[11px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-2.5 py-0.5 rounded-full">
-              Anonymous
-            </span>
           </header>
 
           {/* Router Outlet for ChatRoom */}
