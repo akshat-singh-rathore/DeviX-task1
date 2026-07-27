@@ -3,21 +3,22 @@
 @layer base {
   body {
     @apply bg-slate-950 text-slate-100 antialiased font-sans min-h-screen selection:bg-cyan-500/30 selection:text-cyan-200;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
 /* Custom sleek scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.4);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.6);
+  background: rgba(51, 65, 85, 0.5);
   border-radius: 9999px;
 }
 
@@ -68,7 +69,7 @@
 }
 
 .animate-message {
-  animation: slideUpFade 0.2s ease-out forwards;
+  animation: slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Pulse animation for active online badge */
@@ -78,11 +79,16 @@
     transform: scale(1);
   }
   50% {
-    opacity: 0.4;
-    transform: scale(1.15);
+    opacity: 0.35;
+    transform: scale(1.2);
   }
 }
 
 .animate-online {
   animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Mobile Touch Target Optimizations */
+button, input, a {
+  touch-action: manipulation;
 }
