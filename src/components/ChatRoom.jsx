@@ -11,6 +11,8 @@ import {
   onDisconnect,
   get24HourTimestampCutoff,
 } from "../firebase";
+import { filterProfanity } from "../utils/profanityFilter";
+
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 const MAX_CHAR_LIMIT = 500;
@@ -206,18 +208,22 @@ export default function ChatRoom({ roomId }) {
   // Handle Send Message
   const handleSendMessage = async (e) => {
     e?.preventDefault();
-    const trimmed = inputText.trim();
-    if (!trimmed || trimmed.length > MAX_CHAR_LIMIT || !currentUser) return;
+    const rawTrimmed = inputText.trim();
+    if (!rawTrimmed || rawTrimmed.length > MAX_CHAR_LIMIT || !currentUser) return;
+
+    // Filter profanity / abusive words before storing/sending
+    const sanitizedText = filterProfanity(rawTrimmed);
 
     const now = Date.now();
     const messagePayload = {
       id: `msg_${now}_${Math.random().toString(36).substring(2, 7)}`,
-      text: trimmed,
+      text: sanitizedText,
       senderId: currentUser.uid,
       senderName: currentUser.username,
       timestamp: now,
       expireAt: now + TWENTY_FOUR_HOURS_MS,
     };
+
 
     setInputText("");
 
@@ -278,10 +284,6 @@ export default function ChatRoom({ roomId }) {
             {currentRoom.description}
           </p>
         </div>
-
-        <div className="hidden sm:block text-[11px] font-mono text-zinc-500 border border-zinc-800 px-3 py-1 rounded-full">
-          24h Ephemeral Buffer
-        </div>
       </header>
 
       {/* MESSAGE LIST WITH ROUNDED BUBBLES */}
@@ -324,7 +326,7 @@ export default function ChatRoom({ roomId }) {
 
                 {/* Rounded Bubble Content */}
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed break-words shadow-xs ${
+                  className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed wrap-break-words shadow-xs ${
                     isMe
                       ? "bg-zinc-800 text-zinc-100 border border-zinc-700/80 rounded-br-xs"
                       : "bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-bl-xs"
