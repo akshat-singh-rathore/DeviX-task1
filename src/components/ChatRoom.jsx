@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../AuthContext";
 import { ROOMS } from "../routes";
-import { db, ref, push, set, onValue, off, get24HourTimestampCutoff } from "../firebase";
+import {
+  db,
+  ref,
+  push,
+  set,
+  remove,
+  onValue,
+  onDisconnect,
+  get24HourTimestampCutoff,
+} from "../firebase";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 const MAX_CHAR_LIMIT = 500;
@@ -11,6 +20,7 @@ export default function ChatRoom({ roomId }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [onlineCount, setOnlineCount] = useState(1);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -37,7 +47,72 @@ export default function ChatRoom({ roomId }) {
     }
   };
 
-  // Firebase Real-time Listener & 24h Filter
+  // 1. Real-time Presence & Online Count Tracking
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const presenceRef = ref(db, `presence/${roomId}/${currentUser.uid}`);
+    const roomPresenceRef = ref(db, `presence/${roomId}`);
+    const presenceBc = new BroadcastChannel(`anon_chat_presence_${roomId}`);
+
+    // Register presence in Firebase Realtime Database
+    try {
+      set(presenceRef, {
+        username: currentUser.username,
+        joinedAt: Date.now(),
+      });
+      onDisconnect(presenceRef).remove();
+    } catch (e) {
+      // fallback for offline/mock
+    }
+
+    // Listen for room presence updates in Firebase
+    let unsubscriber = null;
+    try {
+      unsubscriber = onValue(roomPresenceRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const count = Object.keys(data).length;
+          setOnlineCount(count > 0 ? count : 1);
+        } else {
+          setOnlineCount(1);
+        }
+      });
+    } catch (e) {
+      setOnlineCount(1);
+    }
+
+    // BroadcastChannel presence sync for local multi-tab testing
+    const activeTabs = new Set([currentUser.uid]);
+    presenceBc.onmessage = (event) => {
+      if (event.data && event.data.type === "PING_PRESENCE") {
+        presenceBc.postMessage({
+          type: "PONG_PRESENCE",
+          uid: currentUser.uid,
+        });
+      } else if (event.data && event.data.type === "PONG_PRESENCE") {
+        if (event.data.uid) {
+          activeTabs.add(event.data.uid);
+          setOnlineCount((prev) => Math.max(prev, activeTabs.size));
+        }
+      }
+    };
+
+    // Ping existing tabs for presence
+    presenceBc.postMessage({ type: "PING_PRESENCE", uid: currentUser.uid });
+
+    return () => {
+      if (unsubscriber) unsubscriber();
+      try {
+        remove(presenceRef);
+        presenceBc.close();
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [roomId, currentUser]);
+
+  // 2. Firebase Real-time Listener & 24h Message Filter
   useEffect(() => {
     setLoading(true);
     const messagesRef = ref(db, `messages/${roomId}`);
@@ -187,15 +262,16 @@ export default function ChatRoom({ roomId }) {
 
   return (
     <div className="flex flex-col h-full w-full bg-black text-zinc-200 overflow-hidden relative font-sans">
-      {/* ROOM HEADER */}
+      {/* ROOM HEADER WITH LIVE ONLINE USER COUNT */}
       <header className="px-5 py-3.5 bg-black border-b border-zinc-800 flex items-center justify-between z-20 shrink-0">
         <div className="min-w-0">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2.5">
             <h2 className="font-bold text-base text-zinc-100 truncate">
               #{currentRoom.name}
             </h2>
-            <span className="text-[11px] font-mono text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded">
-              Live
+            <span className="inline-flex items-center text-[11px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 mr-1.5 animate-pulse" />
+              {onlineCount} {onlineCount === 1 ? "person online" : "people in room"}
             </span>
           </div>
           <p className="text-xs text-zinc-500 truncate mt-0.5">
@@ -203,19 +279,22 @@ export default function ChatRoom({ roomId }) {
           </p>
         </div>
 
-        <div className="hidden sm:block text-[11px] font-mono text-zinc-500 border border-zinc-800 px-2.5 py-1 rounded">
-          24h Ephemeral
+        <div className="hidden sm:block text-[11px] font-mono text-zinc-500 border border-zinc-800 px-3 py-1 rounded-full">
+          24h Ephemeral Buffer
         </div>
       </header>
 
-      {/* MESSAGE LIST */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-black">
+      {/* MESSAGE LIST WITH ROUNDED BUBBLES */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-black">
         {loading ? (
           <div className="flex items-center justify-center h-full text-zinc-500 text-xs font-mono">
             Loading messages...
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-center px-4 space-y-1">
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-center px-4 space-y-1.5">
+            <div className="px-4 py-2 rounded-2xl bg-zinc-950 border border-zinc-800/80 text-xs font-mono">
+              Empty Room
+            </div>
             <p className="text-sm font-medium text-zinc-400">
               No messages in #{currentRoom.name}
             </p>
@@ -235,7 +314,7 @@ export default function ChatRoom({ roomId }) {
                 }`}
               >
                 {/* Sender Header */}
-                <div className="flex items-center space-x-2 text-[11px] font-mono text-zinc-500 mb-1 px-1">
+                <div className="flex items-center space-x-2 text-[11px] font-mono text-zinc-500 mb-1 px-2">
                   <span className={isMe ? "text-zinc-300 font-medium" : "text-zinc-400"}>
                     {isMe ? "You" : msg.senderName || "Anonymous"}
                   </span>
@@ -243,12 +322,12 @@ export default function ChatRoom({ roomId }) {
                   <span>{formatTime(msg.timestamp)}</span>
                 </div>
 
-                {/* Bubble Content */}
+                {/* Rounded Bubble Content */}
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] px-3.5 py-2.5 rounded text-sm leading-relaxed break-words ${
+                  className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed break-words shadow-xs ${
                     isMe
-                      ? "bg-zinc-800 text-zinc-100 border border-zinc-700"
-                      : "bg-zinc-900 text-zinc-200 border border-zinc-800"
+                      ? "bg-zinc-800 text-zinc-100 border border-zinc-700/80 rounded-br-xs"
+                      : "bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-bl-xs"
                   }`}
                 >
                   {msg.text}
@@ -260,10 +339,10 @@ export default function ChatRoom({ roomId }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* MESSAGE INPUT FORM */}
+      {/* MESSAGE INPUT FORM WITH ROUNDED PILL CONTAINER */}
       <footer className="p-3 sm:p-4 bg-black border-t border-zinc-800 z-20 shrink-0">
         <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto space-y-2">
-          <div className="flex items-center space-x-2 bg-black rounded border border-zinc-800 focus-within:border-zinc-600 px-3 py-1.5 transition-colors">
+          <div className="flex items-center space-x-2 bg-black rounded-full border border-zinc-800 focus-within:border-zinc-600 px-4 py-1.5 transition-colors">
             <input
               ref={inputRef}
               type="text"
@@ -272,7 +351,7 @@ export default function ChatRoom({ roomId }) {
               onKeyDown={handleKeyDown}
               placeholder={`Message #${currentRoom.name}...`}
               maxLength={MAX_CHAR_LIMIT}
-              className="flex-1 bg-transparent px-1 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none"
+              className="flex-1 bg-transparent px-2 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none"
             />
 
             <div className="text-[11px] font-mono text-zinc-500 px-1 shrink-0">
@@ -285,7 +364,7 @@ export default function ChatRoom({ roomId }) {
             <button
               type="submit"
               disabled={!inputText.trim() || inputText.length > MAX_CHAR_LIMIT}
-              className="px-3 py-1.5 text-xs font-medium font-mono text-zinc-200 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:hover:bg-zinc-800 rounded border border-zinc-700 transition-colors shrink-0"
+              className="px-4 py-1.5 text-xs font-medium font-mono text-zinc-100 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:hover:bg-zinc-800 rounded-full border border-zinc-700 transition-colors shrink-0"
             >
               Send
             </button>

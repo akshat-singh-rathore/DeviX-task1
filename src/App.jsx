@@ -19,14 +19,14 @@ export default function App() {
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="px-2.5 py-1 text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 rounded hover:bg-zinc-800 transition-colors"
+                className="px-3 py-1 text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 rounded-full hover:bg-zinc-800 transition-colors"
                 aria-label="Open menu"
               >
                 Menu
               </button>
               <span className="font-bold text-zinc-100 text-sm">AnonChat</span>
             </div>
-            <span className="text-[11px] font-mono text-zinc-500">
+            <span className="text-[11px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-2.5 py-0.5 rounded-full">
               Anonymous
             </span>
           </header>

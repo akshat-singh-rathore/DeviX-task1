@@ -1,6 +1,18 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { getDatabase, ref, push, set, onValue, query, orderByChild, startAt, off } from "firebase/database";
+import {
+  getDatabase,
+  ref,
+  push,
+  set,
+  remove,
+  onValue,
+  onDisconnect,
+  query,
+  orderByChild,
+  startAt,
+  off,
+} from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "mock-api-key",
@@ -25,14 +37,15 @@ export {
   ref,
   push,
   set,
+  remove,
   onValue,
+  onDisconnect,
   query,
   orderByChild,
   startAt,
   off,
-}
+};
 
 export function get24HourTimestampCutoff() {
   return Date.now() - 24 * 60 * 60 * 1000;
 }
-
