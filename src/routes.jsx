@@ -7,37 +7,27 @@ export const ROOMS = [
   {
     id: "general",
     name: "General",
-    description: "Welcome to the central hangout hub for all anonymous chatter.",
-    icon: "MessageSquare",
-    color: "from-blue-500 to-cyan-400",
+    description: "Central discussion for all anonymous members.",
   },
   {
     id: "confessions",
     name: "Confessions",
-    description: "Share your secrets & raw thoughts completely off the record.",
-    icon: "Lock",
-    color: "from-purple-500 to-pink-500",
+    description: "Anonymous secrets and thoughts off the record.",
   },
   {
     id: "advice",
     name: "Advice",
-    description: "Seek feedback, real life guidance, or sound judgment anonymously.",
-    icon: "Lightbulb",
-    color: "from-amber-400 to-orange-500",
+    description: "Anonymous feedback and life advice.",
   },
   {
     id: "random",
     name: "Random",
-    description: "Memes, random shower thoughts, and unpredictable conversations.",
-    icon: "Shuffle",
-    color: "from-emerald-400 to-teal-500",
+    description: "Casual chatter and random topics.",
   },
   {
     id: "tech-talk",
     name: "Tech-Talk",
-    description: "Discuss code, web dev, AI models, frameworks, and tech trends.",
-    icon: "Code",
-    color: "from-cyan-400 to-indigo-500",
+    description: "Software, tech, and development discussions.",
   },
 ];
 
